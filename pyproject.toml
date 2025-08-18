@@ -1,0 +1,155 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tradingagents"
+version = "0.1.0"
+description = "灵感来源于原 TradingAgents 项目的 Claude Code 技术研究项目 - 仅用于学习 MCP 等技术，严禁投资用途"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    {name = "TradingAgents for Claude Code Team"}
+]
+keywords = ["claude-code", "mcp", "research", "education", "technology", "subagents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+    # 核心依赖
+    "pandas>=1.5.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    
+    # 金融数据
+    "yfinance>=0.2.0",
+    "finnhub-python>=2.4.0",
+    "stockstats>=0.6.0",
+    
+    # 新闻数据
+    "feedparser>=6.0.0",
+    "beautifulsoup4>=4.12.0",
+    
+    # Reddit数据
+    "asyncpraw>=7.7.0",
+    "textblob>=0.17.0",
+    
+    # 网络请求
+    "requests>=2.31.0",
+    "urllib3>=1.26.0",
+    "aiohttp>=3.8.0",
+    
+    # 环境变量
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+ai = [
+    "transformers>=4.30.0",
+    "scikit-learn>=1.3.0",
+]
+vector = [
+    "chromadb>=0.4.0",
+]
+trading = [
+    "alpaca-trade-api>=3.0.0",
+]
+visualization = [
+    "matplotlib>=3.7.0",
+    "plotly>=5.15.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/TauricResearch/TradingAgents"
+Documentation = "https://github.com/TauricResearch/TradingAgents/blob/main/README.md"
+
+[project.scripts]
+trading-server = "tradingagents.mcp.trading_server:main"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["tradingagents"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "yfinance.*",
+    "finnhub.*",
+    "stockstats.*",
+    "feedparser.*",
+    "praw.*",
+    "textblob.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
