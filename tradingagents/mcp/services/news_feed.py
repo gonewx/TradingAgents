@@ -203,6 +203,23 @@ class NewsFeedService:
         
         return len(intersection) / len(union)
     
+    async def get_latest_news(self, ticker: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """获取股票相关的最新新闻"""
+        try:
+            # 获取股票相关新闻
+            articles = await self.get_financial_news(symbols=[ticker])
+            
+            # 限制数量并返回
+            return articles[:limit]
+            
+        except Exception as e:
+            logger.error(f"Failed to get latest news for {ticker}: {e}")
+            return [{
+                "error": str(e),
+                "ticker": ticker,
+                "timestamp": datetime.now().isoformat()
+            }]
+    
     async def get_news_sentiment(self, ticker: str) -> Dict[str, Any]:
         """获取股票相关新闻情感分析"""
         try:

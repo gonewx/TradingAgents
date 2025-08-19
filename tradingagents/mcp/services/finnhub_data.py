@@ -11,6 +11,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import pandas as pd
 from .proxy_config import get_proxy_config
+from .exchange_compatibility import ExchangeCompatibilityChecker, DataSource
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +58,31 @@ class FinnhubDataService:
         """获取公司新闻"""
         if not self.client:
             logger.error("Finnhub client not initialized")
-            return []
+            return [{
+                "error": "FINNHUB_NOT_INITIALIZED",
+                "message": "Finnhub客户端未初始化，请检查API密钥配置"
+            }]
+        
+        # 检查兼容性
+        if not ExchangeCompatibilityChecker.is_supported(symbol, DataSource.FINNHUB):
+            _, exchange = ExchangeCompatibilityChecker.parse_symbol(symbol)
+            return [{
+                "error": "EXCHANGE_NOT_SUPPORTED",
+                "message": f"Finnhub不支持交易所 {exchange.value if exchange else 'UNKNOWN'}的股票代码格式",
+                "original_symbol": symbol,
+                "suggestion": "请使用news_feed服务的Google News获取该股票的新闻"
+            }]
+        
+        # 格式化为Finnhub要求的格式
+        finnhub_symbol = ExchangeCompatibilityChecker.format_for_finnhub(symbol)
+        if not finnhub_symbol:
+            return [{
+                "error": "SYMBOL_FORMAT_ERROR",
+                "message": f"无法将代码 {symbol} 转换为Finnhub格式"
+            }]
         
         try:
-            cache_key = f"news_{symbol}_{start_date}_{end_date}"
+            cache_key = f"news_{finnhub_symbol}_{start_date}_{end_date}"
             if self._is_cache_valid(cache_key):
                 return self.cache[cache_key]["data"]
             
@@ -72,8 +94,9 @@ class FinnhubDataService:
             start_timestamp = int(start_dt.timestamp())
             end_timestamp = int(end_dt.timestamp())
             
+            logger.info(f"获取公司新闻: {symbol} -> {finnhub_symbol}")
             news_data = self.client.company_news(
-                symbol=symbol,
+                symbol=finnhub_symbol,
                 _from=start_timestamp,
                 to=end_timestamp
             )
@@ -205,18 +228,53 @@ class FinnhubDataService:
         """获取公司基本信息"""
         if not self.client:
             logger.error("Finnhub client not initialized")
-            return {}
+            return {
+                "error": "FINNHUB_NOT_INITIALIZED",
+                "message": "Finnhub客户端未初始化，请检查API密钥配置"
+            }
+        
+        # 检查兼容性
+        if not ExchangeCompatibilityChecker.is_supported(symbol, DataSource.FINNHUB):
+            _, exchange = ExchangeCompatibilityChecker.parse_symbol(symbol)
+            return {
+                "error": "EXCHANGE_NOT_SUPPORTED",
+                "message": f"Finnhub不支持交易所 {exchange.value if exchange else 'UNKNOWN'}的股票代码格式",
+                "original_symbol": symbol,
+                "supported_exchanges": ["NASDAQ", "NYSE", "HK (正确格式)", "TSX"],
+                "suggestion": "请使用market_data服务获取该股票的基本信息"
+            }
+        
+        # 格式化为Finnhub要求的格式
+        finnhub_symbol = ExchangeCompatibilityChecker.format_for_finnhub(symbol)
+        if not finnhub_symbol:
+            return {
+                "error": "SYMBOL_FORMAT_ERROR",
+                "message": f"无法将代码 {symbol} 转换为Finnhub格式",
+                "original_symbol": symbol
+            }
         
         try:
-            cache_key = f"profile_{symbol}"
+            cache_key = f"profile_{finnhub_symbol}"
             if self._is_cache_valid(cache_key):
                 return self.cache[cache_key]["data"]
             
-            profile = self.client.company_profile2(symbol=symbol)
+            logger.info(f"获取公司资料: {symbol} -> {finnhub_symbol}")
+            profile = self.client.company_profile2(symbol=finnhub_symbol)
+            
+            # 检查返回数据是否为空
+            if not profile or not profile.get("name"):
+                return {
+                    "error": "NO_DATA_FOUND",
+                    "message": f"Finnhub未找到代码 {finnhub_symbol} 的公司信息",
+                    "original_symbol": symbol,
+                    "finnhub_symbol": finnhub_symbol,
+                    "suggestion": "请检查股票代码是否正确，或该股票是否在Finnhub支持范围内"
+                }
             
             # 格式化公司信息
             formatted_profile = {
                 "symbol": symbol,
+                "finnhub_symbol": finnhub_symbol,
                 "name": profile.get("name", ""),
                 "country": profile.get("country", ""),
                 "currency": profile.get("currency", ""),
@@ -227,7 +285,9 @@ class FinnhubDataService:
                 "share_outstanding": profile.get("shareOutstanding", 0),
                 "logo": profile.get("logo", ""),
                 "weburl": profile.get("weburl", ""),
-                "phone": profile.get("phone", "")
+                "phone": profile.get("phone", ""),
+                "data_source": "Finnhub",
+                "timestamp": datetime.now().isoformat()
             }
             
             # 缓存结果
@@ -237,7 +297,12 @@ class FinnhubDataService:
             
         except Exception as e:
             logger.error(f"Failed to get company profile for {symbol}: {e}")
-            return {}
+            return {
+                "error": "API_ERROR",
+                "message": f"获取公司信息时发生错误: {str(e)}",
+                "original_symbol": symbol,
+                "finnhub_symbol": finnhub_symbol if 'finnhub_symbol' in locals() else None
+            }
     
     async def get_market_news(
         self, 

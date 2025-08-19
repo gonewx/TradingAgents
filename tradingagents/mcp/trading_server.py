@@ -35,6 +35,7 @@ from .services.finnhub_data import FinnhubDataService
 from .services.technical_indicators import TechnicalIndicatorsService
 from .services.reddit_data import RedditDataService
 from .services.proxy_config import get_proxy_config
+from .services.exchange_compatibility import validate_symbol_compatibility
 
 # 配置日志
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
@@ -464,6 +465,24 @@ def create_trading_server():
         except Exception as e:
             logger.error(f"获取 {symbol} Reddit 情感摘要失败: {e}")
             return {}
+    
+    # ========== 股票代码兼容性工具 ==========
+    
+    @app.tool()
+    async def validate_stock_symbol_compatibility(symbol: str) -> Dict[str, Any]:
+        """验证股票代码兼容性"""
+        try:
+            logger.info(f"验证股票代码兼容性: {symbol}")
+            compatibility_report = validate_symbol_compatibility(symbol)
+            compatibility_report["validation_timestamp"] = datetime.now().isoformat()
+            return compatibility_report
+        except Exception as e:
+            logger.error(f"验证股票代码兼容性失败 {symbol}: {e}")
+            return {
+                "error": "VALIDATION_ERROR",
+                "message": f"验证股票代码兼容性时发生错误: {str(e)}",
+                "original_symbol": symbol
+            }
     
     # ========== 代理配置工具 ==========
     
