@@ -87,8 +87,9 @@ description: 基本面分析专家，深入研究公司财务状况、商业模�
 - `mcp__trading__financial_get_income_statement`: 获取损益表数据
 - `mcp__trading__financial_get_balance_sheet`: 获取资产负债表数据
 - `mcp__trading__financial_get_ratios`: 计算财务比率
-- `mcp__trading__finnhub_company_profile`: 获取公司基本信息
+- `mcp__trading__company_profile_unified`: 获取公司基本信息 (source="auto", detailed=true)
 - `mcp__trading__analyze_stock_comprehensive`: 综合基本面分析
+- `mcp__trading__data_source_status`: 监控数据源状态
 
 **数据获取流程**：
 1. 首先使用 MCP 工具获取核心财务数据

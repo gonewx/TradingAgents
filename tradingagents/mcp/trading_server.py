@@ -36,6 +36,7 @@ from .services.technical_indicators import TechnicalIndicatorsService
 from .services.reddit_data import RedditDataService
 from .services.proxy_config import get_proxy_config
 from .services.exchange_compatibility import validate_symbol_compatibility
+from .services.unified_data_service import get_unified_data_service
 
 # 配置日志
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
@@ -79,6 +80,7 @@ def create_trading_server():
         finnhub_data = FinnhubDataService()
         technical_indicators = TechnicalIndicatorsService()
         reddit_data = RedditDataService()
+        unified_data = get_unified_data_service()
         
         logger.info("TradingAgents 服务组件初始化完成")
     except Exception as e:
@@ -107,6 +109,7 @@ def create_trading_server():
                     "finnhub_data": "healthy",
                     "technical_indicators": "healthy",
                     "reddit_data": "healthy",
+                    "unified_data": "healthy",
                 }
             }
             return status
@@ -430,6 +433,115 @@ def create_trading_server():
         except Exception as e:
             logger.error(f"获取 {symbol} 技术指标汇总失败: {e}")
             return {}
+    
+    # ========== 统一数据服务工具 ==========
+    
+    @app.tool()
+    async def company_news_unified(
+        symbol: str,
+        start_date: str,
+        end_date: str,
+        source: str = "auto",
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """统一的公司新闻接口 - 支持多数据源和自动降级
+        
+        参数:
+        - symbol: 股票代码
+        - start_date: 开始日期 (YYYY-MM-DD)
+        - end_date: 结束日期 (YYYY-MM-DD)
+        - source: 数据源选择 (auto|google_news|alpha_vantage)
+        - limit: 返回新闻数量限制
+        """
+        try:
+            # 标准化股票代码格式
+            normalized_symbol = _normalize_ticker_symbol(symbol)
+            if normalized_symbol != symbol:
+                logger.info(f"股票代码标准化: {symbol} -> {normalized_symbol}")
+                symbol = normalized_symbol
+            
+            return await unified_data.get_company_news_unified(
+                symbol, start_date, end_date, source, limit
+            )
+        except Exception as e:
+            logger.error(f"统一新闻服务失败 {symbol}: {e}")
+            return [{
+                "error": "UNIFIED_SERVICE_ERROR",
+                "message": f"统一新闻服务发生错误: {str(e)}",
+                "symbol": symbol
+            }]
+    
+    @app.tool()
+    async def company_profile_unified(
+        symbol: str,
+        source: str = "auto",
+        detailed: bool = False
+    ) -> Dict[str, Any]:
+        """统一的公司信息接口 - 支持多数据源和自动降级
+        
+        参数:
+        - symbol: 股票代码
+        - source: 数据源选择 (auto|yfinance|alpha_vantage)
+        - detailed: 是否获取详细信息
+        """
+        try:
+            # 标准化股票代码格式
+            normalized_symbol = _normalize_ticker_symbol(symbol)
+            if normalized_symbol != symbol:
+                logger.info(f"股票代码标准化: {symbol} -> {normalized_symbol}")
+                symbol = normalized_symbol
+            
+            return await unified_data.get_company_profile_unified(
+                symbol, source, detailed
+            )
+        except Exception as e:
+            logger.error(f"统一公司信息服务失败 {symbol}: {e}")
+            return {
+                "error": "UNIFIED_SERVICE_ERROR",
+                "message": f"统一公司信息服务发生错误: {str(e)}",
+                "symbol": symbol
+            }
+    
+    @app.tool()
+    async def data_source_status() -> Dict[str, Any]:
+        """获取数据源状态和配置信息"""
+        try:
+            # 获取统一服务状态
+            status = await unified_data.get_data_source_status()
+            
+            # 获取健康检查信息
+            health = await unified_data.health_check()
+            
+            return {
+                "data_sources": status,
+                "health_check": health,
+                "available_sources": unified_data.get_available_sources(),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"获取数据源状态失败: {e}")
+            return {
+                "error": "STATUS_CHECK_ERROR",
+                "message": f"获取数据源状态时发生错误: {str(e)}"
+            }
+    
+    @app.tool()
+    async def data_source_config_reload() -> Dict[str, Any]:
+        """重新加载数据源配置"""
+        try:
+            unified_data.reload_config()
+            return {
+                "status": "success",
+                "message": "数据源配置已重新加载",
+                "timestamp": datetime.now().isoformat(),
+                "new_config": unified_data.config.to_dict()
+            }
+        except Exception as e:
+            logger.error(f"重新加载配置失败: {e}")
+            return {
+                "status": "error",
+                "message": f"重新加载配置时发生错误: {str(e)}"
+            }
     
     # ========== Reddit 社交数据工具 ==========
     

@@ -39,11 +39,13 @@
 - ✅ **决策流程**: 从分析→研究→风险评估→最终决策
 - ✅ **记忆学习**: SQLite 数据库存储历史决策
 
-### 📊 数据源整合
-- ✅ Yahoo Finance (实时报价、技术指标)
-- ✅ Finnhub (公司新闻、基本面数据)
-- ✅ Google News (新闻聚合、情绪分析)
+### 📊 统一数据源系统 (🆕 免费替代方案)
+- ✅ **完全免费方案**: Google News + yfinance (无限制)
+- ✅ **增强免费方案**: Alpha Vantage API (500次/天)
+- ✅ **智能降级**: API限制时自动切换免费方案
+- ✅ **灵活配置**: 环境变量一键切换数据源
 - ✅ Reddit (社交媒体情绪、热门股票)
+- ⚠️ Finnhub (已替换，但保持兼容)
 
 ## 🎯 如何使用
 
@@ -109,7 +111,12 @@ pip install -r requirements.txt
 
 创建 `.env` 文件：
 ```bash
-# 必需的 API 密钥
+# 🆕 统一数据源配置 (推荐)
+DATA_SOURCE_STRATEGY=free  # free|alpha_vantage|auto
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key_here  # 可选，500次/天免费
+ENABLE_AUTO_FALLBACK=true  # API限制时自动降级
+
+# 传统配置 (保持兼容)
 FINNHUB_API_KEY=your_finnhub_api_key_here
 
 # 可选配置

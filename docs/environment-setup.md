@@ -19,23 +19,38 @@
 
 ## 环境变量配置
 
-### 必需的环境变量
+### 🆕 推荐配置 (统一数据源系统)
 
-#### 1. Finnhub API 密钥
+#### 1. 统一数据源配置
+```bash
+# 数据源策略选择
+export DATA_SOURCE_STRATEGY="free"  # free|alpha_vantage|auto
+
+# Alpha Vantage API (推荐 - 500次/天免费)
+export ALPHA_VANTAGE_API_KEY="your_alpha_vantage_key_here"
+
+# 自动降级策略
+export ENABLE_AUTO_FALLBACK="true"
+```
+
+**配置说明：**
+- `free`: 使用完全免费方案 (Google News + yfinance)
+- `alpha_vantage`: 使用 Alpha Vantage 增强方案 (需要API密钥)
+- `auto`: 智能选择最优数据源
+
+**获取 Alpha Vantage API 密钥：**
+1. 访问 [Alpha Vantage](https://www.alphavantage.co/)
+2. 注册免费账户
+3. 获取 API 密钥 (500次/天免费)
+
+### 传统配置 (保持兼容)
+
+#### Finnhub API 密钥 (可选)
 ```bash
 export FINNHUB_API_KEY="your_finnhub_api_key_here"
 ```
 
-**获取方式：**
-1. 访问 [Finnhub.io](https://finnhub.io/)
-2. 注册免费账户
-3. 在控制台中获取 API 密钥
-
-**用途：**
-- 公司新闻数据
-- 内部交易情绪分析
-- 内部交易数据
-- 公司基本信息
+**注意：** Finnhub 已被免费方案替换，但保持向后兼容
 
 #### 2. OpenAI API 密钥（可选）
 ```bash
@@ -81,7 +96,25 @@ export PROXY_PASSWORD="your_password"
 创建 `.env` 文件在项目根目录：
 
 ```bash
-# ========== 必需配置 ==========
+# ========== 🆕 统一数据源配置 (推荐) ==========
+# 数据源策略选择 (free|alpha_vantage|auto)
+DATA_SOURCE_STRATEGY=free
+
+# Alpha Vantage API - 高质量金融数据（500次/天免费）
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key_here
+
+# 自动降级策略 - 当API限制时自动切换到免费方案
+ENABLE_AUTO_FALLBACK=true
+
+# 数据源优先级设置
+NEWS_SOURCE_PRIORITY=google_news
+PROFILE_SOURCE_PRIORITY=yfinance
+
+# 当配置Alpha Vantage时的优先级
+# NEWS_SOURCE_PRIORITY=alpha_vantage,google_news
+# PROFILE_SOURCE_PRIORITY=alpha_vantage,yfinance
+
+# ========== 传统配置 (保持兼容) ==========
 FINNHUB_API_KEY=your_finnhub_api_key_here
 
 # ========== 可选配置 ==========
@@ -185,26 +218,38 @@ uv pip install scikit-learn>=1.3.0   # 机器学习
 
 ## 数据源说明
 
-### 1. Yahoo Finance (免费)
+### 🆕 统一数据源系统
+
+#### 1. 完全免费方案
+- **Google News**: 新闻搜索和聚合，无限制访问
+- **yfinance**: 股票价格、历史数据、公司基本信息
+- **优势**: 100%免费，无需API密钥，无限制使用
+- **配置**: 默认启用，无需特殊配置
+
+#### 2. Alpha Vantage 增强方案 
+- **用途**: 高质量金融数据和新闻
+- **限制**: 500次/天免费（NASDAQ官方合作伙伴）
+- **配置**: 需要 `ALPHA_VANTAGE_API_KEY`
+- **优势**: 数据质量更高，官方支持
+
+#### 3. 智能降级策略
+- **自动切换**: API限制时自动使用免费方案
+- **配置**: `ENABLE_AUTO_FALLBACK=true`
+- **监控**: 通过 `data_source_status` 工具监控状态
+
+### 传统数据源 (保持兼容)
+
+#### Yahoo Finance (免费)
 - **用途**: 股票价格、历史数据、基本市场信息
 - **限制**: 无需 API 密钥，但有速率限制
 - **配置**: 无需特殊配置
 
-### 2. Finnhub (免费层)
-- **用途**: 
-  - 公司新闻
-  - 内部交易数据
-  - 公司基本信息
-  - 市场新闻
-- **限制**: 免费层每分钟 60 次请求
-- **配置**: 需要 `FINNHUB_API_KEY`
+#### Finnhub (已替换)
+- **状态**: 已被免费方案替换，但保持向后兼容
+- **用途**: 公司新闻、内部交易数据、公司基本信息
+- **配置**: 可选的 `FINNHUB_API_KEY`
 
-### 3. Google News (免费)
-- **用途**: 新闻搜索和聚合
-- **限制**: 通过 RSS feed，无严格限制
-- **配置**: 无需 API 密钥
-
-### 4. Reddit API (免费，需注册)
+#### Reddit API (免费，需注册)
 - **用途**: 社交媒体情绪分析
 - **限制**: 免费层有速率限制
 - **配置**: 需要 Reddit 应用程序凭据

@@ -21,6 +21,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 最终产出是 `claude code` 相关的文件，包括 `slash command`、`subagents`、`mcp` 等。目标是利用这些能力实现与原 `TradingAgents` 相似的量化交易分析功能。
 
+### 🆕 重大更新：统一数据源系统
+项目已实现完整的 **Finnhub 免费替代方案**：
+- ✅ **完全免费方案**: Google News + yfinance (无限制)
+- ✅ **增强免费方案**: Alpha Vantage API (500次/天)  
+- ✅ **智能降级**: API限制时自动切换免费方案
+- ✅ **配置灵活**: 环境变量一键切换数据源
+- ✅ **向后兼容**: 保持原有Finnhub接口可用
+
 ## 环境设置和启动
 
 ### 虚拟环境管理
@@ -37,9 +45,14 @@ pip install -r requirements.txt
 ```
 
 ### 环境变量配置
-复制 `.env.example` 为 `.env` 并配置必要的 API 密钥：
+复制 `.env.example` 为 `.env` 并配置API密钥：
 ```bash
-# 必需配置
+# 🆕 推荐配置（统一数据源）
+DATA_SOURCE_STRATEGY=free  # free|alpha_vantage|auto
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key_here  # 可选，500次/天免费
+ENABLE_AUTO_FALLBACK=true  # API限制时自动降级
+
+# 传统配置（保持兼容）  
 FINNHUB_API_KEY=your_finnhub_api_key_here
 
 # 可选配置  
@@ -165,12 +178,21 @@ tradingagents/
 
 ## 主要MCP工具
 
+### 🆕 统一数据源工具 (推荐)
+- `company_news_unified` - 统一公司新闻接口（支持多数据源）
+- `company_profile_unified` - 统一公司信息接口（支持多数据源）
+- `data_source_status` - 数据源状态监控  
+- `data_source_config_reload` - 配置热重载
+
 ### 数据分析工具
 - `analyze_stock_comprehensive` - 股票综合分析（推荐入口）
 - `market_get_quote` - 实时股价
 - `technical_calculate_indicators` - 技术指标计算
-- `finnhub_company_news` - 公司新闻
 - `reddit_get_sentiment_summary` - Reddit情绪分析
+
+### 传统工具（保持兼容）
+- `finnhub_company_news` - Finnhub公司新闻
+- `finnhub_company_profile` - Finnhub公司信息
 
 ### 系统工具  
 - `health_check` - 系统健康检查
@@ -179,15 +201,15 @@ tradingagents/
 
 ### 使用模式
 ```python
-# 1. 系统检查
-health_check()
+# 🆕 推荐：统一数据源
+company_news_unified("AAPL", "2024-01-01", "2024-01-31", source="auto")
+company_profile_unified("AAPL", source="auto", detailed=True)
+data_source_status()  # 监控数据源状态
 
-# 2. 单股票深度分析
+# 传统方式
 analyze_stock_comprehensive("AAPL")
-
-# 3. 市场监控
-news_google_search("stock market news")
-reddit_get_trending_stocks("stocks", 20)
+market_get_quote("AAPL")
+reddit_get_sentiment_summary("AAPL")
 ```
 
 ## 修复完成的问题
