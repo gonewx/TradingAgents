@@ -23,6 +23,51 @@ description: 新闻和宏观经济分析师，追踪全球新闻、政策变化�
 - 新闻聚合算法的错误关联
 
 ### 3. 数据质量评分
+
+## 🚨 错误处理和终止条件
+
+### 严重错误 - 立即终止新闻分析
+如果在使用MCP工具时遇到以下错误，必须立即停止分析并上报：
+
+1. **新闻数据源完全失效**：
+   - `ALL_SOURCES_FAILED` - 所有新闻数据源失败
+   - `API_LIMIT_EXCEEDED` - 新闻API调用限额耗尽  
+   - `SERVICE_UNAVAILABLE` - 关键新闻服务不可用
+
+2. **新闻数据质量严重问题**：
+   - 获取的新闻与目标公司完全无关
+   - 新闻时间范围严重错误（如获取到10年前的旧新闻）
+   - 新闻内容格式损坏或无法解析
+
+3. **公司身份混淆**：
+   - 检测到同号码不同交易所股票的新闻混淆
+   - 新闻中公司名称与目标公司不匹配
+   - 无法通过智能过滤验证
+
+### 错误上报协议
+遇到严重错误时：
+
+1. **立即停止MCP工具调用** - 避免获取更多无效新闻数据
+2. **生成新闻分析错误报告**：
+```json
+{
+  "agent_id": "news-analyst",
+  "analysis_status": "FAILED",
+  "error_detected": true,
+  "error_details": {
+    "error_type": "ALL_SOURCES_FAILED|API_LIMIT_EXCEEDED|NEWS_QUALITY_ISSUE|COMPANY_MISMATCH",
+    "failed_tools": ["具体失败的MCP新闻工具"],
+    "impact_on_analysis": "无法完成新闻分析|新闻情绪分析不可靠|宏观环境评估受限",
+    "data_completeness": "0-100%的新闻数据完整度",
+    "news_relevance_score": "0-100%的新闻相关性评分"
+  },
+  "recommendation": "TERMINATE_ANALYSIS|CONTINUE_WITH_LIMITED_NEWS|USE_ALTERNATIVE_SOURCES",
+  "fallback_analysis": "基于有限新闻的简化市场环境判断（如可能）",
+  "message": "向主协调器报告的详细新闻分析状况"
+}
+```
+3. **提供降级分析（如可能）** - 基于部分相关新闻提供有限的市场情绪判断
+4. **等待协调决策** - 不独自终止整个分析流程，由slash command统一决策
 对每条新闻进行相关性评分（1-10分）：
 - **9-10分**: 直接相关，公司名称完全匹配
 - **7-8分**: 高度相关，业务领域匹配
